@@ -19,22 +19,22 @@ auto-refreshing Power BI dashboard.
 ## Dashboard Preview
 
 ### Page 1 — Executive Overview
-![Executive Overview](dashboard/page1_executive_overview.png)
+![Executive Overview](page1_executive_overview.png)
 
 ### Page 2 — Financial Health Analysis
-![Financial Health](dashboard/page2_financial_health.png)
+![Financial Health](page2_financial_health.png)
 
 ### Page 3 — Monthly Trend & City Analysis
-![Monthly Trend](dashboard/page3_monthly_trend.png)
+![Monthly Trend](page3_monthly_trend.png)
 
 ### Page 4 — Savings Intelligence
-![Savings Intelligence](dashboard/page4_savings_intelligence.png)
+![Savings Intelligence](page4_savings_intelligence.png)
 
 ### Page 5 — Early Warning Alerts
-![Early Warning](dashboard/page5_early_warning_alerts.png)
+![Early Warning](page5_early_warning_alerts.png)
 
 ### Page 6 — Churn Prediction
-![Churn Prediction](dashboard/page6_churn_prediction.png)
+![Churn Prediction](page6_churn_prediction.png)
 
 ---
 
