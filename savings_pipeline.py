@@ -12,7 +12,8 @@
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-import joblib 
+import joblib
+import anthropic 
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -348,7 +349,8 @@ def detect_anomalies(df):
 # ----------------------------------------------------------
 def export_to_excel(kpi_df, city_df, income_df, credit_df,
                     monthly_df, age_df, health_df, savings_df,
-                    alerts_df, churn_df, clean_df, output_path):
+                    alerts_df, churn_df, clean_df,
+                    ai_insights, output_path):
     """Write all outputs to structured Excel file."""
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
  
@@ -373,6 +375,12 @@ def export_to_excel(kpi_df, city_df, income_df, credit_df,
             writer, sheet_name='At_Risk_Alerts', index=False)
         churn_df.to_excel(
             writer, sheet_name='Churn_Prediction', index=False)
+# AI Generated Insights sheet
+        insights_df = pd.DataFrame(
+            {'AI Executive Summary': [ai_insights]}
+        )
+        insights_df.to_excel(
+            writer, sheet_name='AI_Insights', index=False)
         clean_df.to_excel(
             writer, sheet_name='Transaction_Data', index=False)
  
@@ -393,12 +401,14 @@ def run_pipeline():
     df, alerts_df = detect_anomalies(df)
     df, churn_df  = predict_churn(df)
     kpi_df = calculate_kpis(df)
+    ai_insights = generate_ai_insights(kpi_df)
     (city_df, income_df, credit_df, monthly_df,
      age_df, health_df, savings_df) = build_summary_tables(df)
     export_to_excel(
         kpi_df, city_df, income_df, credit_df,
         monthly_df, age_df, health_df, savings_df,
-        alerts_df, churn_df, df, OUTPUT_FILE
+        alerts_df, churn_df, df,
+        ai_insights, OUTPUT_FILE
     )
  
     print("\n" + "="*55)
@@ -485,7 +495,98 @@ def predict_churn(df):
     print(f"High Risk clients: {high:,}")
     print("ML churn prediction complete")
 
-    return df, churn_output 
+    return df, churn_output
+# ----------------------------------------------------------
+# SECTION 10: GENERATE AI INSIGHTS
+# ----------------------------------------------------------
+def generate_ai_insights(kpi_df):
+    """
+    WHAT THIS FUNCTION DOES:
+    Sends your daily KPIs to Claude AI via API.
+    Claude reads the numbers and writes a professional
+    business summary automatically — every morning.
+    No human writes this. AI generates it in 3 seconds.
+
+    INPUT:  kpi_df = your KPI summary DataFrame
+    OUTPUT: insights = AI written business summary text
+    """
+    print("Generating AI insights...")
+
+    # Read API key from file
+    try:
+        with open(
+            'D:/Jar_Financial_Intelligence/API_Key/api_key.txt',
+            'r'
+        ) as f:
+            api_key = f.read().strip()
+    except FileNotFoundError:
+        print("API key file not found — skipping AI insights")
+        return "AI insights unavailable — API key not found"
+
+    # Extract key numbers from KPI table
+    kpi_dict = dict(zip(kpi_df['KPI'], kpi_df['Value']))
+
+    # Build the prompt — this is what we send to Claude
+    prompt = f"""
+    You are a senior financial analyst at a fintech savings platform.
+    
+    Here are today's customer analytics results:
+    
+    - Total Clients: {kpi_dict.get('Unique Clients', 'N/A')}
+    - Total Transactions: {kpi_dict.get('Total Transactions', 'N/A')}
+    - Total Transaction Value: {kpi_dict.get('Total Transaction Value (Rs)', 'N/A')}
+    - Average Financial Health Score: {kpi_dict.get('Avg Financial Health Score', 'N/A')}
+    - Healthy Clients: {kpi_dict.get('Healthy Clients %', 'N/A')}
+    - Early Warning Clients: {kpi_dict.get('Early Warning Clients', 'N/A')}
+    - Average Monthly Savings Capacity: {kpi_dict.get('Avg Monthly Savings Capacity', 'N/A')}
+    - Digital Payment Adoption: {kpi_dict.get('Digital Payment Adoption %', 'N/A')}
+    - Report Generated: {kpi_dict.get('Report Generated', 'N/A')}
+    
+    Write a professional executive summary with exactly 3 paragraphs:
+    
+    Paragraph 1: Overall portfolio health assessment
+    Paragraph 2: Key risks and early warning signals
+    Paragraph 3: Specific recommended actions for the business team
+    
+    Start with this exact header on the first line:
+    "Executive Summary | Portfolio Analytics Report | [today's date]"
+    Then add a line of dashes underneath like this:
+    "------------------------------------------------------------"
+    Then leave one blank line.
+    Then write exactly 3 short paragraphs with one blank line between each:
+    Paragraph 1 (2 sentences): Overall portfolio health 
+    with key numbers — what is working well.
+    Paragraph 2 (2 sentences): Key risks and early warning 
+    signals that require immediate attention.
+    Paragraph 3 (2 sentences): Specific recommended actions 
+    the business team should take immediately.
+    Do not use any markdown formatting.
+    No # symbols. No * symbols. No bold. Plain text only.
+    Be professional, data-driven, and actionable.
+    Write as if presenting to the CEO of the company.
+    """
+
+    # Connect to Claude and get insights
+    try:
+        client = anthropic.Anthropic(api_key=api_key)
+
+        message = client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=280,
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        insights = message.content[0].text
+        logging.info("AI insights generated successfully")
+        print("AI insights generated successfully")
+        return insights
+
+    except Exception as e:
+        logging.error(f"AI insights failed: {e}")
+        print(f"AI insights failed: {e}")
+        return f"AI insights unavailable: {str(e)}" 
  
 # -- Entry point --------------------------------------------
 if __name__ == "__main__":
